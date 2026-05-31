@@ -1,5 +1,11 @@
 # Knowledge Base — OneDrive Sync
 
+**The problem:** OneDrive has limited space. You want Word documents to sync and be available offline through OneDrive, but the rest of your files — PDFs, spreadsheets, code, notes — should stay on a local drive where space is not a concern. You still want to browse everything from one folder tree without hunting across two locations.
+
+**The solution:** This script keeps a strict split between two mirrored folder trees. OneDrive holds only Word documents. Everything else lives locally. For each Word doc in OneDrive a Windows shortcut (`.lnk`) is left in the exact same relative location in the local folder, so the folder looks complete and the docs open normally. The sync is repeatable — run it any time to correct drift, move newly-created files to the right side, and repair any broken or missing shortcuts.
+
+---
+
 Keeps `E:\Main\Knowledge Base` and `E:\OneDrive\Knowledge Base` in a clean split:
 OneDrive holds **only Word documents**; everything else lives locally.
 A `.lnk` shortcut in the local folder provides transparent access to each Word doc in OneDrive.
