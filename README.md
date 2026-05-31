@@ -1,45 +1,66 @@
-# Move Files & Leave Shortcuts
+# Knowledge Base — OneDrive Sync
 
-Moves files with specified extensions from a source folder to a target folder, preserving the directory structure. A `.lnk` shortcut pointing to the new location is left in place of each moved file.
+Keeps `E:\Main\Knowledge Base` and `E:\OneDrive\Knowledge Base` in a clean split:
+OneDrive holds **only Word documents**; everything else lives locally.
+A `.lnk` shortcut in the local folder provides transparent access to each Word doc in OneDrive.
 
-**Use case:** offload files to a secondary location (e.g. OneDrive) while keeping transparent access from the original folder tree.
+## Main script
 
-## How it works
+**`sync_folders__in_onedrive_keep_only_word_docs.py`** — run this to sync both directions.
 
-1. Recursively scans `SOURCE_FOLDER` for files matching `EXTENSIONS`
-2. Moves each file to the mirrored path under `TARGET_FOLDER`
-3. Creates a Windows shortcut (`.lnk`) at the original file location pointing to the new path
+It enforces the invariant in three jobs, all folder-structure-preserving:
+
+| Job | What it does |
+|-----|--------------|
+| **JOB 1** OneDrive → Local | Moves any non-Word file from OneDrive back to the matching local path |
+| **JOB 2** Local → OneDrive | Moves any Word doc found locally to OneDrive; leaves a `.lnk` shortcut behind |
+| **JOB 3** Shortcut repair | For every Word doc in OneDrive, creates missing shortcuts and re-points stale ones |
 
 ## Configuration
 
-Edit the constants at the top of `move_files.py`:
+Edit the constants at the top of the script:
 
 ```python
-SOURCE_FOLDER = r"E:\Main\Knowledge Base"
-TARGET_FOLDER = r"E:\OneDrive\Knowledge_Base_OneDrive"
-DRY_RUN      = False        # True = preview only, no files moved
-EXTENSIONS   = [".doc", ".docx"]
-```
-
-## Requirements
-
-- Windows
-- Python 3.10+
-- [`pywin32`](https://pypi.org/project/pywin32/)
-
-```
-pip install pywin32
+LOCAL_FOLDER    = r"E:\Main\Knowledge Base"
+ONEDRIVE_FOLDER = r"E:\OneDrive\Knowledge Base"
+DRY_RUN         = True          # True = preview only, no files moved
+WORD_EXTENSIONS = [".doc", ".docx", ".docm", ".dot", ".dotx", ".dotm"]
+CONFLICT_POLICY = "skip"        # "skip" | "overwrite" | "rename"
+REPAIR_MISMATCHED = True        # re-point shortcuts that point at a wrong path
 ```
 
 ## Usage
 
 ```
-python move_files.py
+python sync_folders__in_onedrive_keep_only_word_docs.py
 ```
 
-Set `DRY_RUN = True` first to preview what will be moved without making any changes.
+Always run with `DRY_RUN = True` first to review what will change.  
+Set `DRY_RUN = False` to apply — the script will ask for `yes` confirmation before doing anything.
 
-## Notes
+Every run (dry or live) writes categorized TXT reports to a timestamped folder under `reports/`:
 
-- Shortcut creation uses the native `IShellLink` COM interface, which correctly handles Unicode characters in paths.  
-- If an individual file fails, the error is printed and the script continues. A summary of all failures is shown at the end.
+| Report file | Contents |
+|-------------|----------|
+| `00_SUMMARY.txt` | Header, counts, and every category listed in full |
+| `01_j1_moved.txt` | Non-Word files moved OneDrive → Local |
+| `02_j1_skipped.txt` | Files skipped due to conflicts |
+| `03_j2_moved.txt` | Word docs moved Local → OneDrive |
+| `04_j2_shortcut_created.txt` | Shortcuts created for newly-moved Word docs |
+| `05_j3_shortcut_created.txt` | Shortcuts created (were missing) |
+| `06_j3_shortcut_repointed.txt` | Shortcuts re-pointed (were stale) |
+| `07_errors.txt` | Any errors encountered |
+
+The `reports/` folder is git-ignored.
+
+## Requirements
+
+- Windows
+- Python 3.10+
+- [`pywin32`](https://pypi.org/project/pywin32/) — `pip install pywin32`
+
+## Other scripts
+
+`move_files.py` and `restore_nonword_files_and_repair_shortcuts.py` are the original
+one-direction scripts that `sync_folders__in_onedrive_keep_only_word_docs.py` supersedes.
+They are kept for reference.
